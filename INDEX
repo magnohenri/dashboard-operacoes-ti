@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Operações Estratégicas - Criação & TI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+        
+        :root {
+            --color-bg-dark: #1a202c;
+            --color-bg-card: #2d3748;
+            --color-bg-card-hover: #3a475a; /* Um pouco mais claro para hover */
+            --color-text-primary: #e2e8f0;
+            --color-text-secondary: #a0aec0;
+            --color-text-tertiary: #718096;
+            --color-accent-gold: #f6e05e;
+            --color-accent-teal: #38b2ac;
+            --color-accent-blue: #4299e1;
+            --color-accent-purple: #9f7aea;
+            --color-accent-pink: #ed64a6;
+            --color-accent-green: #48bb78;
+            --color-border-primary: #4a5568;
+            --color-grid-line: rgba(74, 85, 104, 0.4);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--color-bg-dark);
+            color: var(--color-text-primary);
+        }
+
+        .gradient-text-gold {
+            background: linear-gradient(to right, var(--color-accent-gold), #f6ad55);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .main-card {
+            background-color: var(--color-bg-card);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+            border: 1px solid var(--color-border-primary);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .main-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.3);
+        }
+        .card-title {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .kpi-value {
+            font-size: 2.2rem; /* Ajustado para caber melhor */
+            font-weight: 700;
+            line-height: 1.1;
+        }
+        .task-list-item {
+            background-color: var(--color-bg-dark);
+            padding: 10px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border-left: 4px solid;
+            transition: background-color 0.2s ease;
+        }
+        .task-list-item:hover {
+            background-color: #354052;
+        }
+        .task-name {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            font-size: 0.9rem;
+        }
+        .task-details {
+            font-size: 0.75rem;
+            color: var(--color-text-secondary);
+        }
+        .task-project-criacao { border-color: var(--color-accent-pink); }
+        .task-project-frontend { border-color: var(--color-accent-teal); }
+        .task-project-backend { border-color: var(--color-accent-blue); }
+        .task-project-qa { border-color: var(--color-accent-green); }
+        .task-project-general-ti { border-color: var(--color-accent-purple); }
+
+
+        #ganttChartContainer {
+            width: 100%;
+            height: 550px; 
+            background-color: var(--color-bg-card);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+            border: 1px solid var(--color-border-primary);
+        }
+        .chartjs-tooltip {
+            background: var(--color-bg-dark) !important;
+            border-radius: 8px !important;
+            border: 1px solid var(--color-accent-gold) !important;
+            color: var(--color-text-primary) !important;
+            padding: 10px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+            opacity: 0.95 !important;
+            font-size: 0.85rem !important;
+        }
+        .chartjs-tooltip-title {
+            font-weight: 600 !important;
+            margin-bottom: 8px !important;
+            color: var(--color-accent-gold) !important;
+            font-size: 0.9rem !important;
+        }
+        .parallel-activity-card {
+            background-color: var(--color-bg-dark);
+            border: 1px solid var(--color-border-primary);
+            border-left-width: 4px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6 lg:p-8">
+    <header class="text-center mb-10">
+        <h1 class="text-3xl md:text-4xl lg:text-5xl font-extrabold gradient-text-gold mb-2">Dashboard de Operações Estratégicas</h1>
+        <p class="text-md md:text-lg text-[var(--color-text-secondary)]">Criação & TI | Próximas 2 Semanas: 29/05/2025 - 12/06/2025</p>
+    </header>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div class="main-card text-center">
+            <h2 class="card-title">Total Tarefas (Criação/TI)</h2>
+            <p class="kpi-value text-[var(--color-accent-gold)]" id="total-relevant-tasks">0</p>
+        </div>
+        <div class="main-card text-center">
+            <h2 class="card-title">Projetos com Atividades</h2>
+            <p class="kpi-value text-[var(--color-accent-teal)]" id="active-projects-count">0</p>
+        </div>
+        <div class="main-card text-center">
+            <h2 class="card-title">Tarefas Front-end</h2>
+            <p class="kpi-value text-[var(--color-accent-blue)]" id="frontend-task-count">0</p>
+        </div>
+        <div class="main-card text-center">
+            <h2 class="card-title">Tarefas Back-end</h2>
+            <p class="kpi-value text-[var(--color-accent-purple)]" id="backend-task-count">0</p>
+        </div>
+    </div>
+
+    <section class="mb-10">
+        <h2 class="text-2xl font-bold mb-6 gradient-text-gold text-center">Carga de Trabalho Detalhada (Próximas 2 Semanas)</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="main-card">
+                <h3 class="card-title text-[var(--color-accent-pink)]">Criação & Arte</h3>
+                <div id="criacao-arte-tasks-list" class="mt-4 max-h-72 overflow-y-auto pr-2 space-y-2"></div>
+            </div>
+            <div class="main-card">
+                <h3 class="card-title text-[var(--color-accent-teal)]">Front-end</h3>
+                <div id="frontend-tasks-list" class="mt-4 max-h-72 overflow-y-auto pr-2 space-y-2"></div>
+            </div>
+            <div class="main-card">
+                <h3 class="card-title text-[var(--color-accent-blue)]">Back-end</h3>
+                <div id="backend-tasks-list" class="mt-4 max-h-72 overflow-y-auto pr-2 space-y-2"></div>
+            </div>
+            <div class="main-card">
+                <h3 class="card-title text-[var(--color-accent-green)]">QA & Integração</h3>
+                <div id="qa-integracao-tasks-list" class="mt-4 max-h-72 overflow-y-auto pr-2 space-y-2"></div>
+            </div>
+            <div class="main-card lg:col-span-2"> <h3 class="card-title text-[var(--color-accent-purple)]">Desenvolvimento Geral TI, Go Live & Outros</h3>
+                <div id="general-ti-tasks-list" class="mt-4 max-h-72 overflow-y-auto pr-2 space-y-2"></div>
+            </div>
+        </div>
+    </section>
+    
+    <section class="mb-10">
+        <h2 class="text-2xl font-bold mb-6 gradient-text-gold text-center">Análise de Atividades Paralelas por Tipo de Tarefa</h2>
+        <div id="parallel-activities-section" class="space-y-6">
+            </div>
+    </section>
+
+    <section>
+        <h2 class="text-2xl font-bold mb-6 gradient-text-gold text-center">Cronograma Comparativo de Projetos (Criação & TI)</h2>
+        <div id="ganttChartContainer">
+            <canvas id="detailedGanttChart"></canvas>
+        </div>
+    </section>
+
+    <footer class="text-center mt-12 py-6 border-t border-[var(--color-border-primary)]">
+        <p class="text-sm text-[var(--color-text-secondary)]">Dashboard Gerado em: <span id="generationDate"></span></p>
+    </footer>
+
+    <script>
+        document.getElementById('generationDate').textContent = new Date().toLocaleDateString('pt-BR', {
+            day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const parts = dateStr.split('/');
+            return new Date(parts[2], parseInt(parts[1]) - 1, parts[0]);
+        }
+
+        const today = new Date(2025, 4, 29); // 29 de Maio de 2025
+        const twoWeeksLater = new Date(today);
+        twoWeeksLater.setDate(today.getDate() + 14); // Até 12 de Junho de 2025
+
+        const allProjectTasks = [
+            // RC - Coroa 2025
+            { taskFullName: "Desenvolvimento (Coroa Politica de Bem Estar)", taskType: "Desenvolvimento", project: "RC - Coroa 2025", start: "26/05/2025", end: "02/06/2025", team: "TI" },
+            { taskFullName: "QA (Coroa Politica de Bem Estar)", taskType: "QA", project: "RC - Coroa 2025", start: "29/05/2025", end: "30/05/2025", team: "TI" },
+            { taskFullName: "[GoLive PBE] (Coroa Politica de Bem Estar)", taskType: "Go Live", project: "RC - Coroa 2025", start: "02/06/2025", end: "02/06/2025", team: "TI" },
+            { taskFullName: "Produção (Coroa Novo Plus)", taskType: "Produção", project: "RC - Coroa 2025", start: "21/05/2025", end: "10/06/2025", team: "Criação" },
+            { taskFullName: "Criação (sub de Produção - Coroa Novo Plus)", taskType: "Criação", project: "RC - Coroa 2025", start: "21/05/2025", end: "30/05/2025", team: "Criação" },
+            { taskFullName: "Arte (sub de Criação - Coroa Novo Plus)", taskType: "Arte", project: "RC - Coroa 2025", start: "29/05/2025", end: "29/05/2025", team: "Criação" },
+            { taskFullName: "Aprovação Criação (Coroa Novo Plus)", taskType: "Aprovação", project: "RC - Coroa 2025", start: "30/05/2025", end: "30/05/2025", team: "Criação" },
+            { taskFullName: "Desenvolvimento (Coroa Novo Plus)", taskType: "Desenvolvimento", project: "RC - Coroa 2025", start: "02/06/2025", end: "10/06/2025", team: "TI" },
+            { taskFullName: "Front (Desenvolvimento - Coroa Novo Plus)", taskType: "Front-end", project: "RC - Coroa 2025", start: "02/06/2025", end: "11/06/2025", team: "TI" },
+            { taskFullName: "Back (Desenvolvimento - Coroa Novo Plus)", taskType: "Back-end", project: "RC - Coroa 2025", start: "02/06/2025", end: "11/06/2025", team: "TI" },
+            { taskFullName: "QA (Desenvolvimento - Coroa Novo Plus)", taskType: "QA", project: "RC - Coroa 2025", start: "12/06/2025", end: "13/06/2025", team: "TI" },
+            // Sonora Site 2025
+            { taskFullName: "Integração Fronte Back (Desenvolvimento - Fase 3)", taskType: "Integração", project: "Sonora Site 2025", start: "04/06/2025", end: "12/06/2025", team: "TI" },
+            // Honda IndicAção
+            { taskFullName: "QA (Site) - Honda", taskType: "QA", project: "Honda IndicAção", start: "29/05/2025", end: "30/05/2025", team: "TI" },
+            { taskFullName: "Go Live (Site) - Honda", taskType: "Go Live", project: "Honda IndicAção", start: "02/06/2025", end: "02/06/2025", team: "TI" },
+            // BQS 2025 v2
+            { taskFullName: "Back (Paineis ADM) - BQS", taskType: "Back-end", project: "BQS 2025 v2", start: "20/05/2025", end: "29/05/2025", team: "TI" },
+            { taskFullName: "QA (Site) - BQS", taskType: "QA", project: "BQS 2025 v2", start: "29/05/2025", end: "30/05/2025", team: "TI" },
+            { taskFullName: "QA (Paineis ADM) - BQS", taskType: "QA", project: "BQS 2025 v2", start: "30/05/2025", end: "30/05/2025", team: "TI" },
+            { taskFullName: "GoLive Paineis (Painel ADM) - BQS", taskType: "Go Live", project: "BQS 2025 v2", start: "02/06/2025", end: "02/06/2025", team: "TI" }
+        ];
+
+        const relevantTaskTypesForTeams = ["Front-end", "Back-end", "Criação", "Arte", "QA", "Integração", "Go Live", "Desenvolvimento", "Produção", "Aprovação"];
+
+        const relevantTasks = allProjectTasks.filter(task => {
+            const startDate = parseDate(task.start);
+            const endDate = parseDate(task.end);
+            const overlapsPeriod = (startDate <= twoWeeksLater && endDate >= today);
+            const isRelevantType = relevantTaskTypesForTeams.includes(task.taskType);
+            return overlapsPeriod && isRelevantType;
+        });
+
+        document.getElementById('total-relevant-tasks').textContent = relevantTasks.length;
+        const activeProjectsSet = new Set(relevantTasks.map(t => t.project));
+        document.getElementById('active-projects-count').textContent = activeProjectsSet.size;
+        
+        const frontendTasks = relevantTasks.filter(t => t.taskType === "Front-end");
+        const backendTasks = relevantTasks.filter(t => t.taskType === "Back-end");
+        document.getElementById('frontend-task-count').textContent = frontendTasks.length;
+        document.getElementById('backend-task-count').textContent = backendTasks.length;
+
+        function populateTaskList(elementId, tasks, itemClass) {
+            const listEl = document.getElementById(elementId);
+            listEl.innerHTML = ''; // Limpar lista anterior
+            if (tasks.length === 0) {
+                listEl.innerHTML = '<p class="task-details text-center py-4">Nenhuma tarefa nesta categoria para o período.</p>';
+                return;
+            }
+            tasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = `task-list-item ${itemClass}`;
+                item.innerHTML = `
+                    <p class="task-name">${task.taskFullName}</p>
+                    <p class="task-details">Projeto: ${task.project}</p>
+                    <p class="task-details">Período: ${task.start} - ${task.end}</p>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+
+        populateTaskList('criacao-arte-tasks-list', relevantTasks.filter(t => ["Criação", "Arte", "Produção", "Aprovação"].includes(t.taskType)), 'task-project-criacao');
+        populateTaskList('frontend-tasks-list', frontendTasks, 'task-project-frontend');
+        populateTaskList('backend-tasks-list', backendTasks, 'task-project-backend');
+        populateTaskList('qa-integracao-tasks-list', relevantTasks.filter(t => ["QA", "Integração"].includes(t.taskType)), 'task-project-qa');
+        populateTaskList('general-ti-tasks-list', relevantTasks.filter(t => ["Desenvolvimento", "Go Live"].includes(t.taskType) && t.taskType !== "Front-end" && t.taskType !== "Back-end"), 'task-project-general-ti');
+
+        // Análise de Atividades Paralelas
+        const parallelActivitiesSection = document.getElementById('parallel-activities-section');
+        parallelActivitiesSection.innerHTML = ''; 
+        const tasksByType = relevantTasks.reduce((acc, task) => {
+            acc[task.taskType] = acc[task.taskType] || [];
+            acc[task.taskType].push(task);
+            return acc;
+        }, {});
+
+        let hasParallelActivities = false;
+        Object.entries(tasksByType).forEach(([type, tasks]) => {
+            const projectsInvolved = new Set(tasks.map(t => t.project));
+            if (projectsInvolved.size > 1 && tasks.length > 1) { 
+                hasParallelActivities = true;
+                let typeColor = 'var(--color-text-secondary)';
+                if (["Criação", "Arte", "Produção", "Aprovação"].includes(type)) typeColor = 'var(--color-accent-pink)';
+                else if (type === "Front-end") typeColor = 'var(--color-accent-teal)';
+                else if (type === "Back-end") typeColor = 'var(--color-accent-blue)';
+                else if (["QA", "Integração"].includes(type)) typeColor = 'var(--color-accent-green)';
+                else if (["Desenvolvimento", "Go Live"].includes(type)) typeColor = 'var(--color-accent-purple)';
+
+                const typeSection = document.createElement('div');
+                typeSection.className = 'main-card p-4 mb-4 parallel-activity-card';
+                typeSection.style.borderColor = typeColor;
+                
+                let content = `<h4 class="text-lg font-semibold mb-3" style="color: ${typeColor};">${type} (Atividades Paralelas/Múltiplas)</h4>`;
+                content += '<div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">';
+                
+                // Agrupar tarefas por projeto dentro do tipo
+                const tasksByProjectWithinType = tasks.reduce((acc, task) => {
+                    acc[task.project] = acc[task.project] || [];
+                    acc[task.project].push(task);
+                    return acc;
+                }, {});
+
+                Object.entries(tasksByProjectWithinType).forEach(([projectName, projectTasksArr]) => {
+                    content += '<div>';
+                    content += `<h5 class="text-sm font-medium text-[var(--color-text-secondary)] mb-1">${projectName}</h5>`;
+                    content += '<ul class="space-y-1">';
+                    projectTasksArr.forEach(task => {
+                        content += `<li class="text-xs p-2 rounded bg-[var(--color-bg-dark)] shadow-sm"><strong>${task.taskFullName}</strong><br><span class="text-[var(--color-text-tertiary)]">(${task.start} - ${task.end})</span></li>`;
+                    });
+                    content += '</ul></div>';
+                });
+
+                content += '</div>';
+                typeSection.innerHTML = content;
+                parallelActivitiesSection.appendChild(typeSection);
+            }
+        });
+        if (!hasParallelActivities) {
+             parallelActivitiesSection.innerHTML = '<p class="main-card text-center py-6 text-[var(--color-text-secondary)]">Nenhuma atividade paralela significativa (mesmo tipo de tarefa em múltiplos projetos) identificada para Criação/TI nas próximas duas semanas.</p>';
+        }
+
+
+        // Gráfico de Gantt Detalhado
+        const ganttTaskTypesOrder = ["Produção", "Criação", "Aprovação", "Arte", "Desenvolvimento", "Front-end", "Back-end", "Integração", "QA", "Go Live"];
+        const ganttProjectColors = {
+            "RC - Coroa 2025": 'var(--color-accent-gold)', 
+            "Sonora Site 2025": 'var(--color-accent-teal)', 
+            "Honda IndicAção": 'var(--color-accent-pink)', 
+            "BQS 2025 v2": 'var(--color-accent-purple)'  
+        };
+        const ganttProjectBorderColors = { 
+            "RC - Coroa 2025": '#D69E2E', 
+            "Sonora Site 2025": '#2C7A7B', 
+            "Honda IndicAção": '#D53F8C', 
+            "BQS 2025 v2": '#6B46C1'    
+        };
+
+        const ganttDatasets = Object.keys(ganttProjectColors).map(projectName => {
+            const projectRelatedFilteredTasks = relevantTasks.filter(task => task.project === projectName);
+            if (projectRelatedFilteredTasks.length === 0) return null;
+
+            return {
+                label: projectName,
+                data: projectRelatedFilteredTasks.map(task => ({
+                    x: [parseDate(task.start), parseDate(task.end)],
+                    y: task.taskType,
+                    tooltipName: task.taskFullName 
+                })),
+                backgroundColor: ganttProjectColors[projectName],
+                borderColor: ganttProjectBorderColors[projectName],
+                borderWidth: 1,
+                borderRadius: 3,
+                barPercentage: 0.6,      
+                categoryPercentage: 0.7
+            };
+        }).filter(dataset => dataset !== null);
+
+        const ganttCtx = document.getElementById('detailedGanttChart').getContext('2d');
+        if (ganttDatasets.length > 0 && ganttCtx) {
+            new Chart(ganttCtx, {
+                type: 'bar',
+                data: { labels: ganttTaskTypesOrder, datasets: ganttDatasets },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'time', time: { unit: 'day', tooltipFormat: 'dd/MM/yyyy', displayFormats: { day: 'dd MMM' }},
+                            min: today, max: twoWeeksLater, 
+                            title: { display: true, text: 'Linha do Tempo (Próximas 2 Semanas)', color: 'var(--color-text-secondary)', font: { size: 12, weight: '500' }},
+                            grid: { color: 'var(--color-grid-line)', borderColor: 'var(--color-grid-line)'},
+                            ticks: { color: 'var(--color-text-secondary)', font: { size: 11 }}
+                        },
+                        y: {
+                            title: { display: true, text: 'Tipos de Tarefa (Criação & TI)', color: 'var(--color-text-secondary)', font: { size: 12, weight: '500' }},
+                            grid: { display: false },
+                            ticks: { color: 'var(--color-text-primary)', font: { size: 12 }}
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: 'var(--color-text-primary)', font: { size: 12 }, boxWidth: 12, padding: 15 }},
+                        tooltip: {
+                            enabled: false,
+                            external: function(context) {
+                                let tooltipEl = document.getElementById('chartjs-tooltip');
+                                if (!tooltipEl) {
+                                    tooltipEl = document.createElement('div');
+                                    tooltipEl.id = 'chartjs-tooltip';
+                                    tooltipEl.classList.add('chartjs-tooltip');
+                                    tooltipEl.style.position = 'absolute';
+                                    tooltipEl.style.pointerEvents = 'none';
+                                    document.body.appendChild(tooltipEl);
+                                }
+                                const tooltipModel = context.tooltip;
+                                if (tooltipModel.opacity === 0) { tooltipEl.style.opacity = '0'; return; }
+                                tooltipEl.style.opacity = '1';
+                                if (tooltipModel.body) {
+                                    const titleLines = tooltipModel.title || [];
+                                    let innerHtml = '';
+                                    titleLines.forEach(function(title) { innerHtml += '<div class="chartjs-tooltip-title">' + title + '</div>'; });
+                                    tooltipModel.body.forEach(function(body, i) {
+                                        const colors = tooltipModel.labelColors[i];
+                                        const taskData = context.chart.data.datasets[tooltipModel.dataPoints[i].datasetIndex].data[tooltipModel.dataPoints[i].dataIndex];
+                                        const taskName = taskData.tooltipName;
+                                        const startDate = new Date(taskData.x[0]).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                                        const endDate = new Date(taskData.x[1]).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+                                        const projectLabel = context.chart.data.datasets[tooltipModel.dataPoints[i].datasetIndex].label;
+                                        innerHtml += `<div style="margin-bottom: 4px; font-size: 0.85em;"><span style="font-weight: 600; color:${colors.borderColor || colors.backgroundColor};">Projeto:</span> ${projectLabel}</div>`;
+                                        innerHtml += `<div style="font-size: 0.85em;"><span style="font-weight: 600;">Tarefa:</span> ${taskName}</div>`;
+                                        innerHtml += `<div style="font-size: 0.8em; color: var(--color-text-secondary); margin-top: 3px;">Período: ${startDate} - ${endDate}</div>`;
+                                    });
+                                    tooltipEl.innerHTML = innerHtml;
+                                }
+                                const position = context.chart.canvas.getBoundingClientRect();
+                                tooltipEl.style.left = position.left + window.pageXOffset + tooltipModel.caretX + 'px';
+                                tooltipEl.style.top = position.top + window.pageYOffset + tooltipModel.caretY + 'px';
+                                tooltipEl.style.transform = 'translate(-50%, -110%)';
+                            }
+                        }
+                    },
+                    layout: { padding: { top: 15, bottom: 15, left: 5, right: 15 }}
+                }
+            });
+        } else {
+            const canvas = document.getElementById('detailedGanttChart');
+            if(canvas){
+                const ctx = canvas.getContext('2d');
+                ctx.font = "16px Poppins";
+                ctx.fillStyle = "var(--color-text-secondary)";
+                ctx.textAlign = "center";
+                ctx.fillText("Nenhuma tarefa de Criação ou TI encontrada para as próximas 2 semanas.", ctx.canvas.width / 2, ctx.canvas.height / 2);
+            }
+        }
+    </script>
+</body>
+</html>
